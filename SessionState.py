@@ -6,15 +6,16 @@ https://gist.github.com/tvst/036da038ab3e999a64497f42de966a92
 
 # pylint: disable=protected-access
 
-try:
-    import streamlit.ReportThread as ReportThread
-    from streamlit.server.Server import Server
-except ModuleNotFoundError:
-    # Streamlit >= 0.65.0
-    import streamlit.report_thread as ReportThread
-    from streamlit.server.server import Server
+# try:
+#     import streamlit.ReportThread as ReportThread
+#     from streamlit.server.Server import Server
+# except ModuleNotFoundError:
+#     # Streamlit >= 0.65.0
+#     import streamlit.report_thread as ReportThread
+#     from streamlit.server.server import Server
 
-
+from streamlit.server.server import Server
+from streamlit.script_run_context import add_script_run_ctx
 class SessionState(object):
     """Hack to add per-session state to Streamlit.
 
@@ -88,8 +89,7 @@ def get(**kwargs):
     """
     # Hack to get the session object from Streamlit.
 
-    ctx = ReportThread.get_report_ctx()
-
+    ctx = add_script_run_ctx()
     this_session = None
 
     current_server = Server.get_current()
@@ -106,7 +106,7 @@ def get(**kwargs):
             (hasattr(s, '_main_dg') and s._main_dg == ctx.main_dg)
             or
             # Streamlit >= 0.54.0
-            (not hasattr(s, '_main_dg') and s.enqueue == ctx.enqueue)
+            (not hasattr(s, '_main_dg') and s.enqueue == s.enqueue)
             or
             # Streamlit >= 0.65.2
             (not hasattr(s, '_main_dg') and

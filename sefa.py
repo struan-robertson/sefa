@@ -85,7 +85,7 @@ def main():
                                      trunc_psi=args.trunc_psi,
                                      trunc_layers=args.trunc_layers)
     codes = codes.detach().cpu().numpy()
-
+    
     # Generate visualization pages.
     distances = np.linspace(args.start_distance,args.end_distance, args.step)
     num_sam = args.num_samples

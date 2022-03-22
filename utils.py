@@ -76,9 +76,14 @@ def load_generator(model_name):
 
     # Load pre-trained weights.
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-    checkpoint_path = os.path.join(CHECKPOINT_DIR, model_name + '.pth')
+    checkpoint_path = 'c:/Users/tommi/Documents/sefa/checkpoints/' + model_name + '.pth'
+    #checkpoint_path = os.path.join(CHECKPOINT_DIR, model_name + '.pth')
+    #print(checkpoint_path)
+    #print(os.path.exists('checkpoints\stylegan_animeface512.pth'))
+    #alt_path = 'stylegan_animeface512.pth'
     print(f'Loading checkpoint from `{checkpoint_path}` ...')
     if not os.path.exists(checkpoint_path):
+        #print("NOTTTTTTTTTTT")
         print(f'  Downloading checkpoint from `{url}` ...')
         subprocess.call(['wget', '--quiet', '-O', checkpoint_path, url])
         print(f'  Finish downloading checkpoint.')
