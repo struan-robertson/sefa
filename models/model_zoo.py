@@ -5,6 +5,11 @@
 
 MODEL_ZOO = {
     # PGGAN official.
+    'custom_stylegan2': dict(
+        gan_type='stylegan2',
+        resolution=1024,
+        url='',
+    ),
     'pggan_celebahq1024': dict(
         gan_type='pggan',
         resolution=1024,

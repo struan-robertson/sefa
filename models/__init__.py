@@ -9,6 +9,7 @@ from .stylegan_discriminator import StyleGANDiscriminator
 from .stylegan2_generator import StyleGAN2Generator
 from .stylegan2_discriminator import StyleGAN2Discriminator
 
+
 __all__ = [
     'MODEL_ZOO', 'PGGANGenerator', 'PGGANDiscriminator', 'StyleGANGenerator',
     'StyleGANDiscriminator', 'StyleGAN2Generator', 'StyleGAN2Discriminator',
@@ -110,5 +111,7 @@ def parse_gan_type(module):
     if isinstance(module, (StyleGANGenerator, StyleGANDiscriminator)):
         return 'stylegan'
     if isinstance(module, (StyleGAN2Generator, StyleGAN2Discriminator)):
+        return 'stylegan2'
+    if str(type(module)) == "<class 'torch_utils.persistence.persistent_class.<locals>.Decorator'>":
         return 'stylegan2'
     raise ValueError(f'Unable to parse GAN type from type `{type(module)}`!')

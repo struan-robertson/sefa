@@ -12,7 +12,6 @@ from utils import postprocess
 from utils import load_generator
 from utils import factorize_weight
 
-
 @st.cache(allow_output_mutation=True, show_spinner=False)
 def get_model(model_name):
     """Gets model by name."""
@@ -63,16 +62,19 @@ def main():
 
     model_name = st.sidebar.selectbox(
         'Model to Interpret',
-        ['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256',
-         'pggan_celebahq1024'])
+        #['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256', 'pggan_celebahq1024'])
+
+        ['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256', 'pggan_celebahq1024', 'custom_stylegan2'])
 
     model = get_model(model_name)
+    #print("stage 0")
     gan_type = parse_gan_type(model)
     layer_idx = st.sidebar.selectbox(
         'Layers to Interpret',
         ['all', '0-1', '2-5', '6-13'])
+    #print("stage 1")
     layers, boundaries, eigen_values = factorize_model(model, layer_idx)
-
+    #print("stage 2")
     num_semantics = st.sidebar.number_input(
         'Number of semantics', value=10, min_value=0, max_value=None, step=1)
     steps = {sem_idx: 0 for sem_idx in range(num_semantics)}

@@ -5,9 +5,9 @@ import os
 import subprocess
 import cv2
 import numpy as np
-
+import pickle
 import torch
-
+import dnnlib
 from models import MODEL_ZOO
 from models import build_generator
 from models import parse_gan_type
@@ -15,7 +15,7 @@ from models import parse_gan_type
 __all__ = ['postprocess', 'load_generator', 'factorize_weight',
            'HtmlPageVisualizer']
 
-CHECKPOINT_DIR = 'checkpoints'
+CHECKPOINT_DIR = 'c:/Users/tommi/Documents/repos/sefa/checkpoints/'
 
 
 def to_tensor(array):
@@ -71,29 +71,46 @@ def load_generator(model_name):
 
     # Build generator.
     print(f'Building generator for model `{model_name}` ...')
-    generator = build_generator(**model_config)
+    #
     print(f'Finish building generator.')
+    generator = build_generator(**model_config)
 
     # Load pre-trained weights.
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-    checkpoint_path = 'c:/Users/tommi/Documents/sefa/checkpoints/' + model_name + '.pth'
+    if 'custom' in model_name:
+        checkpoint_path = CHECKPOINT_DIR + model_name + '.pkl'
+        with open(checkpoint_path, 'rb') as f:
+            #G = legacy.load_network_pkl(f)['G_ema'].to(device)
+            #G = pickle.load(f)['G'].cuda()  # torch.nn.Module
+            checkpoint = torch.load(f)
+            print(checkpoint.keys())
+            generator.load_state_dict(checkpoint['state_dict'])
+            #generator = n['G']
+            #sd = network['G'].state_dict()
+            #generator.load_state_dict(sd)
+            #generator = generator.cuda()
+            generator.eval()
+    else: 
+        checkpoint_path = CHECKPOINT_DIR + model_name + '.pth'
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+        print(type(checkpoint))
+        print(type(checkpoint['generator']))
+        if 'generator_smooth' in checkpoint:
+            generator.load_state_dict(checkpoint['generator_smooth'])
+        else:
+            generator.load_state_dict(checkpoint['generator'])
+        generator = generator.cuda()
+        generator.eval()
     #checkpoint_path = os.path.join(CHECKPOINT_DIR, model_name + '.pth')
     #print(checkpoint_path)
     #print(os.path.exists('checkpoints\stylegan_animeface512.pth'))
     #alt_path = 'stylegan_animeface512.pth'
-    print(f'Loading checkpoint from `{checkpoint_path}` ...')
-    if not os.path.exists(checkpoint_path):
-        #print("NOTTTTTTTTTTT")
-        print(f'  Downloading checkpoint from `{url}` ...')
-        subprocess.call(['wget', '--quiet', '-O', checkpoint_path, url])
-        print(f'  Finish downloading checkpoint.')
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
-    if 'generator_smooth' in checkpoint:
-        generator.load_state_dict(checkpoint['generator_smooth'])
-    else:
-        generator.load_state_dict(checkpoint['generator'])
-    generator = generator.cuda()
-    generator.eval()
+    #print(f'Loading checkpoint from `{checkpoint_path}` ...')
+    # if not os.path.exists(checkpoint_path):
+    #     #print("NOTTTTTTTTTTT")
+    #     print(f'  Downloading checkpoint from `{url}` ...')
+    #     subprocess.call(['wget', '--quiet', '-O', checkpoint_path, url])
+    #     print(f'  Finish downloading checkpoint.')
     print(f'Finish loading checkpoint.')
     return generator
 
