@@ -8,7 +8,7 @@ from .stylegan_generator import StyleGANGenerator
 from .stylegan_discriminator import StyleGANDiscriminator
 from .stylegan2_generator import StyleGAN2Generator
 from .stylegan2_discriminator import StyleGAN2Discriminator
-
+#from .networks_stylegan2 import Generator
 
 __all__ = [
     'MODEL_ZOO', 'PGGANGenerator', 'PGGANDiscriminator', 'StyleGANGenerator',

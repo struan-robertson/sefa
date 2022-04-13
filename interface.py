@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import streamlit as st
 import SessionState
-
+import dnnlib
 from models import parse_gan_type
 from utils import to_tensor
 from utils import postprocess
@@ -18,7 +18,7 @@ def get_model(model_name):
     return load_generator(model_name)
 
 
-@st.cache(allow_output_mutation=True, show_spinner=False)
+#@st.cache(allow_output_mutation=True, show_spinner=False)
 def factorize_model(model, layer_idx):
     """Factorizes semantics from target layers of the given model."""
     return factorize_weight(model, layer_idx)
@@ -64,8 +64,9 @@ def main():
         'Model to Interpret',
         #['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256', 'pggan_celebahq1024'])
 
-        ['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256', 'pggan_celebahq1024', 'custom_stylegan2'])
-
+        #['stylegan_animeface512', 'stylegan_car512', 'stylegan_cat256', 'pggan_celebahq1024', 'custom_stylegan2'])
+        ['custom_stylegan2_2-002620'])
+    
     model = get_model(model_name)
     #print("stage 0")
     gan_type = parse_gan_type(model)

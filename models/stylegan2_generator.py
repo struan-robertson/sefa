@@ -76,7 +76,7 @@ class StyleGAN2Generator(nn.Module):
                  z_space_dim=512,
                  w_space_dim=512,
                  label_size=0,
-                 mapping_layers=8,
+                 mapping_layers=2,
                  mapping_fmaps=512,
                  mapping_lr_mul=0.01,
                  repeat_w=True,
