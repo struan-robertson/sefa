@@ -4,9 +4,9 @@ import os
 import argparse
 from tqdm import tqdm
 import numpy as np
-
+import dnnlib
 import torch
-
+import legacy
 from models import parse_gan_type
 from utils import to_tensor
 from utils import postprocess
@@ -21,6 +21,10 @@ def parse_args():
         description='Discover semantics from the pre-trained weight.')
     parser.add_argument('model_name', type=str,
                         help='Name to the pre-trained model.')
+    parser.add_argument('--model_loc', type=str,
+                        help='Name to the pre-trained model.')      
+    parser.add_argument('--size', type=int,
+                        help='size')                                      
     parser.add_argument('--save_dir', type=str, default='results',
                         help='Directory to save the visualization pages. '
                              '(default: %(default)s)')
@@ -57,6 +61,9 @@ def parse_args():
                         help='Seed for sampling. (default: %(default)s)')
     parser.add_argument('--gpu_id', type=str, default='0',
                         help='GPU(s) to use. (default: %(default)s)')
+    parser.add_argument('--type', type=str, default='stylegan2',
+                        help='gan type '
+                             '(default: %(default)s)')
     return parser.parse_args()
 
 
@@ -67,23 +74,35 @@ def main():
     os.makedirs(args.save_dir, exist_ok=True)
 
     # Factorize weights.
-    generator = load_generator(args.model_name)
-    gan_type = parse_gan_type(generator)
-    layers, boundaries, values = factorize_weight(generator, args.layer_idx)
+    device = torch.device('cuda')
+    #print(args.model)
+    with dnnlib.util.open_url(args.model_loc) as f:
+        generator = legacy.load_network_pkl(f)['G_ema'].to(device) # type: ignore
+    #generator = load_generator(args.model_name)
+    gan_type = args.type
+    layers, boundaries, values = factorize_weight(generator, args.size, args.layer_idx, gan_type)
 
     # Set random seed.
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-
+    from models.stylegan2_generator import TruncationModule
     # Prepare codes.
-    codes = torch.randn(args.num_samples, generator.z_space_dim).cuda()
+    codes = torch.randn(args.num_samples, generator.z_dim).cuda()
     if gan_type == 'pggan':
         codes = generator.layer0.pixel_norm(codes)
-    elif gan_type in ['stylegan', 'stylegan2']:
-        codes = generator.mapping(codes)['w']
-        codes = generator.truncation(codes,
-                                     trunc_psi=args.trunc_psi,
-                                     trunc_layers=args.trunc_layers)
+    elif gan_type in ['stylegan', 'stylegan2', 'stylegan3']:
+        codes = generator.mapping(codes, None)#['w']
+        #print(codes)
+        #print(generator)
+        gtrun = TruncationModule(w_space_dim=generator.w_dim,
+                                           num_layers=generator.num_ws,
+                                           repeat_w=True)
+        codes = gtrun(codes, trunc_psi=args.trunc_psi, trunc_layers=args.trunc_layers)
+        # codes = generator.truncation(codes,
+        #                              trunc_psi=args.trunc_psi,
+        #                              trunc_layers=args.trunc_layers)
+    #elif gan_type in ['stylegan3']:
+
     codes = codes.detach().cpu().numpy()
     
     # Generate visualization pages.
@@ -125,10 +144,10 @@ def main():
                 temp_code = code.copy()
                 if gan_type == 'pggan':
                     temp_code += boundary * d
-                    image = generator(to_tensor(temp_code))['image']
-                elif gan_type in ['stylegan', 'stylegan2']:
+                    image = generator(to_tensor(temp_code))#['image']
+                elif gan_type in ['stylegan', 'stylegan2', 'stylegan3']:
                     temp_code[:, layers, :] += boundary * d
-                    image = generator.synthesis(to_tensor(temp_code))['image']
+                    image = generator.synthesis(to_tensor(temp_code))#['image']
                 image = postprocess(image)[0]
                 vizer_1.set_cell(sem_id * (num_sam + 1) + sam_id + 1, col_id,
                                  image=image)

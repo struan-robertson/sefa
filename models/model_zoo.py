@@ -6,6 +6,16 @@
 MODEL_ZOO = {
     # PGGAN official.
     
+    'custom_network-snapshot-002872': dict(
+        gan_type='stylegan2',
+        resolution=1024,
+        url='',
+    ),
+    'custom_network-snapshot-001713': dict(
+        gan_type='stylegan2',
+        resolution=1024,
+        url='',
+    ),
     'custom_stylegan2_2-002620': dict(
         gan_type='stylegan2',
         resolution=1024,

@@ -12,10 +12,30 @@ from models import MODEL_ZOO
 from models import build_generator
 from models import parse_gan_type
 
+#some stuff:
+        #layer_name = f'layer{idx}'
+        # if gan_type == 'stylegan2' or  and idx == generator.num_ws - 1:
+        #     layer_name = f'output{idx // 2}'
+        # if gan_type == 'pggan':
+        #     weight = generator.__getattr__(layer_name).weight
+        #     weight = weight.flip(2, 3).permute(1, 0, 2, 3).flatten(1)
+        #elif gan_type in ['stylegan', 'stylegan2', 'stylegan3']:
+
+        #with open(checkpoint_path, 'rb') as f:
+            #G = legacy.load_network_pkl(f)['G_ema'].to(device)
+            #G = pickle.load(f)['G'].cuda()  # torch.nn.Module
+            #checkpoint = torch.load(f)
+            #print(checkpoint.keys())
+            #generator.load_state_dict(checkpoint['state_dict'])
+            #generator = n['G']
+            #sd = network['G'].state_dict()
+            #generator.load_state_dict(sd)
+            #generator = generator.cuda()
+            #generator.eval()
 __all__ = ['postprocess', 'load_generator', 'factorize_weight',
            'HtmlPageVisualizer']
 
-CHECKPOINT_DIR = 'c:/Users/tommi/Documents/repos/sefa/checkpoints/'
+CHECKPOINT_DIR = '/dataB1/tommie/networks/'
 
 
 def to_tensor(array):
@@ -71,53 +91,24 @@ def load_generator(model_name):
 
     # Build generator.
     print(f'Building generator for model `{model_name}` ...')
-    #
     print(f'Finish building generator.')
-    #generator = build_generator(**model_config)
-    #checkpoint_path = CHECKPOINT_DIR + model_name + '.pth'
+
     # Load pre-trained weights.
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-    if 'custom' in model_name:
+    if 'pkl' in model_name:
         checkpoint_path = CHECKPOINT_DIR + model_name + '.pkl'
-        #with open(checkpoint_path, 'rb') as f:
-            #G = legacy.load_network_pkl(f)['G_ema'].to(device)
-            #G = pickle.load(f)['G'].cuda()  # torch.nn.Module
-            #checkpoint = torch.load(f)
-            #print(checkpoint.keys())
-            #generator.load_state_dict(checkpoint['state_dict'])
-            #generator = n['G']
-            #sd = network['G'].state_dict()
-            #generator.load_state_dict(sd)
-            #generator = generator.cuda()
-            #generator.eval()
-
-            
         device = torch.device('cuda')
         with dnnlib.util.open_url(checkpoint_path) as f:
             generator = legacy.load_network_pkl(f)['G_ema'].to(device) # type: ignore
-        
     else:
         checkpoint_path = CHECKPOINT_DIR + model_name + '.pth'
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
-        #print(type(checkpoint))
-        #print(type(checkpoint['generator']))
         if 'generator_smooth' in checkpoint:
             generator.load_state_dict(checkpoint['generator_smooth'])
         else:
             generator.load_state_dict(checkpoint['generator'])
         generator = generator.cuda()
         generator.eval()
-        print("test")
-    #checkpoint_path = os.path.join(CHECKPOINT_DIR, model_name + '.pth')
-    #print(checkpoint_path)
-    #print(os.path.exists('checkpoints\stylegan_animeface512.pth'))
-    #alt_path = 'stylegan_animeface512.pth'
-    #print(f'Loading checkpoint from `{checkpoint_path}` ...')
-    # if not os.path.exists(checkpoint_path):
-    #     #print("NOTTTTTTTTTTT")
-    #     print(f'  Downloading checkpoint from `{url}` ...')
-    #     subprocess.call(['wget', '--quiet', '-O', checkpoint_path, url])
-    #     print(f'  Finish downloading checkpoint.')
     print(f'Finish loading checkpoint.')
     return generator
 
@@ -175,7 +166,9 @@ def parse_indices(obj, min_val=None, max_val=None):
     return indices
 
 
-def factorize_weight(generator, layer_idx='all'):
+def factorize_weight(generator, size, layer_idx='all', gan_type = 'stylegan2'):
+    print(size)
+    print(gan_type)
     """Factorizes the generator weight to get semantics boundaries.
 
     Args:
@@ -190,127 +183,31 @@ def factorize_weight(generator, layer_idx='all'):
         ValueError: If the generator type is not supported.
     """
     # Get GAN type.
-    gan_type = parse_gan_type(generator)
-
     # Get layers.
     if gan_type == 'pggan':
         layers = [0]
-    elif gan_type in ['stylegan', 'stylegan2']:
+    elif gan_type in ['stylegan', 'stylegan2', 'stylegan3']:
         if layer_idx == 'all':
-            print(generator.num_ws)
             layers = list(range(generator.num_ws))
         else:
             layers = parse_indices(layer_idx,
                                    min_val=0,
-                                   max_val=generator.num_layers - 1)
-
-    # Factorize semantics from weight.
+                                   max_val=generator.num_ws - 1)
+    keys_a = []
     weights = []
-    #print(layers)
-    #print(generator.synthesis.__getattr__('b4').weight.T)
-    all_layers = ['synthesis.b4.const', 'synthesis.b4.resample_filter', 'synthesis.b4.conv1.weight', 
-    'synthesis.b4.conv1.noise_strength', 'synthesis.b4.conv1.bias', 'synthesis.b4.conv1.resample_filter', 
-    'synthesis.b4.conv1.noise_const', 'synthesis.b4.conv1.affine.weight', 'synthesis.b4.conv1.affine.bias', 
-    'synthesis.b4.torgb.weight', 'synthesis.b4.torgb.bias', 'synthesis.b4.torgb.affine.weight', 
-    'synthesis.b4.torgb.affine.bias', 'synthesis.b8.resample_filter', 'synthesis.b8.conv0.weight', 
-    'synthesis.b8.conv0.noise_strength', 'synthesis.b8.conv0.bias', 'synthesis.b8.conv0.resample_filter', 
-    'synthesis.b8.conv0.noise_const', 'synthesis.b8.conv0.affine.weight', 'synthesis.b8.conv0.affine.bias', 
-    'synthesis.b8.conv1.weight', 'synthesis.b8.conv1.noise_strength', 'synthesis.b8.conv1.bias', 
-    'synthesis.b8.conv1.resample_filter', 'synthesis.b8.conv1.noise_const', 'synthesis.b8.conv1.affine.weight', 
-    'synthesis.b8.conv1.affine.bias', 'synthesis.b8.torgb.weight', 'synthesis.b8.torgb.bias', 'synthesis.b8.torgb.affine.weight', 
-    'synthesis.b8.torgb.affine.bias', 'synthesis.b16.resample_filter', 'synthesis.b16.conv0.weight', 
-    'synthesis.b16.conv0.noise_strength', 'synthesis.b16.conv0.bias', 'synthesis.b16.conv0.resample_filter', 
-    'synthesis.b16.conv0.noise_const', 'synthesis.b16.conv0.affine.weight', 'synthesis.b16.conv0.affine.bias', 
-    'synthesis.b16.conv1.weight', 'synthesis.b16.conv1.noise_strength', 'synthesis.b16.conv1.bias', 
-    'synthesis.b16.conv1.resample_filter', 'synthesis.b16.conv1.noise_const', 'synthesis.b16.conv1.affine.weight', 
-    'synthesis.b16.conv1.affine.bias', 'synthesis.b16.torgb.weight', 'synthesis.b16.torgb.bias', 
-    'synthesis.b16.torgb.affine.weight', 'synthesis.b16.torgb.affine.bias', 'synthesis.b32.resample_filter', 
-    'synthesis.b32.conv0.weight', 'synthesis.b32.conv0.noise_strength', 'synthesis.b32.conv0.bias', 
-    'synthesis.b32.conv0.resample_filter', 'synthesis.b32.conv0.noise_const', 'synthesis.b32.conv0.affine.weight', 
-    'synthesis.b32.conv0.affine.bias', 'synthesis.b32.conv1.weight', 'synthesis.b32.conv1.noise_strength', 
-    'synthesis.b32.conv1.bias', 'synthesis.b32.conv1.resample_filter', 'synthesis.b32.conv1.noise_const', 
-    'synthesis.b32.conv1.affine.weight', 'synthesis.b32.conv1.affine.bias', 'synthesis.b32.torgb.weight', 
-    'synthesis.b32.torgb.bias', 'synthesis.b32.torgb.affine.weight', 'synthesis.b32.torgb.affine.bias', 
-    'synthesis.b64.resample_filter', 'synthesis.b64.conv0.weight', 'synthesis.b64.conv0.noise_strength', 
-    'synthesis.b64.conv0.bias', 'synthesis.b64.conv0.resample_filter', 'synthesis.b64.conv0.noise_const', 
-    'synthesis.b64.conv0.affine.weight', 'synthesis.b64.conv0.affine.bias', 'synthesis.b64.conv1.weight', 
-    'synthesis.b64.conv1.noise_strength', 'synthesis.b64.conv1.bias', 'synthesis.b64.conv1.resample_filter', 
-    'synthesis.b64.conv1.noise_const', 'synthesis.b64.conv1.affine.weight', 'synthesis.b64.conv1.affine.bias', 
-    'synthesis.b64.torgb.weight', 'synthesis.b64.torgb.bias', 'synthesis.b64.torgb.affine.weight', 
-    'synthesis.b64.torgb.affine.bias', 'synthesis.b128.resample_filter', 'synthesis.b128.conv0.weight', 
-    'synthesis.b128.conv0.noise_strength', 'synthesis.b128.conv0.bias', 'synthesis.b128.conv0.resample_filter', 
-    'synthesis.b128.conv0.noise_const', 'synthesis.b128.conv0.affine.weight', 'synthesis.b128.conv0.affine.bias', 
-    'synthesis.b128.conv1.weight', 'synthesis.b128.conv1.noise_strength', 'synthesis.b128.conv1.bias', 
-    'synthesis.b128.conv1.resample_filter', 'synthesis.b128.conv1.noise_const', 'synthesis.b128.conv1.affine.weight', 
-    'synthesis.b128.conv1.affine.bias', 'synthesis.b128.torgb.weight', 'synthesis.b128.torgb.bias', 
-    'synthesis.b128.torgb.affine.weight', 'synthesis.b128.torgb.affine.bias', 'synthesis.b256.resample_filter', 
-    'synthesis.b256.conv0.weight', 'synthesis.b256.conv0.noise_strength', 'synthesis.b256.conv0.bias', 
-    'synthesis.b256.conv0.resample_filter', 'synthesis.b256.conv0.noise_const', 'synthesis.b256.conv0.affine.weight', 
-    'synthesis.b256.conv0.affine.bias', 'synthesis.b256.conv1.weight', 'synthesis.b256.conv1.noise_strength', 
-    'synthesis.b256.conv1.bias', 'synthesis.b256.conv1.resample_filter', 'synthesis.b256.conv1.noise_const', 
-    'synthesis.b256.conv1.affine.weight', 'synthesis.b256.conv1.affine.bias', 'synthesis.b256.torgb.weight', 
-    'synthesis.b256.torgb.bias', 'synthesis.b256.torgb.affine.weight', 'synthesis.b256.torgb.affine.bias', 
-    'synthesis.b512.resample_filter', 'synthesis.b512.conv0.weight', 'synthesis.b512.conv0.noise_strength', 
-    'synthesis.b512.conv0.bias', 'synthesis.b512.conv0.resample_filter', 'synthesis.b512.conv0.noise_const', 
-    'synthesis.b512.conv0.affine.weight', 'synthesis.b512.conv0.affine.bias', 'synthesis.b512.conv1.weight', 
-    'synthesis.b512.conv1.noise_strength', 'synthesis.b512.conv1.bias', 'synthesis.b512.conv1.resample_filter', 
-    'synthesis.b512.conv1.noise_const', 'synthesis.b512.conv1.affine.weight', 'synthesis.b512.conv1.affine.bias', 
-    'synthesis.b512.torgb.weight', 'synthesis.b512.torgb.bias', 'synthesis.b512.torgb.affine.weight', 
-    'synthesis.b512.torgb.affine.bias', 'synthesis.b1024.resample_filter', 'synthesis.b1024.conv0.weight', 
-    'synthesis.b1024.conv0.noise_strength', 'synthesis.b1024.conv0.bias', 'synthesis.b1024.conv0.resample_filter', 
-    'synthesis.b1024.conv0.noise_const', 'synthesis.b1024.conv0.affine.weight', 'synthesis.b1024.conv0.affine.bias', 
-    'synthesis.b1024.conv1.weight', 'synthesis.b1024.conv1.noise_strength', 'synthesis.b1024.conv1.bias', 
-    'synthesis.b1024.conv1.resample_filter', 'synthesis.b1024.conv1.noise_const', 'synthesis.b1024.conv1.affine.weight', 
-    'synthesis.b1024.conv1.affine.bias', 'synthesis.b1024.torgb.weight', 'synthesis.b1024.torgb.bias', 
-    'synthesis.b1024.torgb.affine.weight', 'synthesis.b1024.torgb.affine.bias', 'mapping.w_avg', 'mapping.fc0.weight', 
-    'mapping.fc0.bias', 'mapping.fc1.weight', 'mapping.fc1.bias']
-
-    keys_w = ['synthesis.b4.conv1.weight', 'synthesis.b8.conv0.weight', 'synthesis.b8.conv1.weight', 'synthesis.b16.conv0.weight', 
-    'synthesis.b16.conv1.weight', 'synthesis.b32.conv0.weight', 'synthesis.b32.conv1.weight', 'synthesis.b64.conv0.weight', 
-    'synthesis.b64.conv1.weight', 'synthesis.b128.conv0.weight', 'synthesis.b128.conv1.weight', 'synthesis.b256.conv0.weight', 
-    'synthesis.b256.conv1.weight', 'synthesis.b512.conv0.weight', 'synthesis.b512.conv1.weight', 'synthesis.b1024.conv0.weight', 
-    'synthesis.b1024.conv1.weight']
-    keys_a = ['synthesis.b4.conv1.affine.weight', 'synthesis.b8.conv0.affine.weight', 'synthesis.b8.conv1.affine.weight', 
-    'synthesis.b16.conv0.affine.weight', 'synthesis.b16.conv1.affine.weight', 'synthesis.b32.conv0.affine.weight', 
-    'synthesis.b32.conv1.affine.weight', 'synthesis.b64.conv0.affine.weight', 'synthesis.b64.conv1.affine.weight', 
-    'synthesis.b128.conv0.affine.weight', 'synthesis.b128.conv1.affine.weight', 'synthesis.b256.conv0.affine.weight', 
-    'synthesis.b256.conv1.affine.weight', 'synthesis.b512.conv0.affine.weight', 'synthesis.b512.conv1.affine.weight', 
-    'synthesis.b1024.conv0.affine.weight', 'synthesis.b1024.conv1.affine.weight']
     weight_dict = generator.state_dict()
-    #print(weight_dict.synthe.keys)
-    # for i in list(weight_dict.keys):
-    #     print(i)
-    #     print(len(weight_dict.get(i)))
-    # for idx in all_layers:
-    #     print(idx)
-    #     if 'noise' in idx or 'bias' in idx:
-    #         print(1)
-    #     else:
-    #         print(len(weight_dict.get(idx)))
-    # for idx in layers:
-    #     print(idx)
-    for idx in keys_w:
-        #print(idx)
-        layer_name = f'layer{idx}'
-        if gan_type == 'stylegan2' and idx == generator.num_ws - 1:
-            layer_name = f'output{idx // 2}'
-        if gan_type == 'pggan':
-            weight = generator.__getattr__(layer_name).weight
-            weight = weight.flip(2, 3).permute(1, 0, 2, 3).flatten(1)
-        elif gan_type in ['stylegan', 'stylegan2']:
-            #weight = generator.synthesis.__getattr__(layer_name).style.weight.T
-            weight = weight_dict.get(idx).cpu().detach().numpy()
-            #print(len(weight[3]))
-
-
-            if len(weight) < 500:
-                print((512/len(weight)))
-                weight = np.concatenate([weight] * int(512/len(weight)))
-        weights.append(weight)
-    #weight = np.column_stack(weights).astype(np.float32)
+    for w in list(weight_dict):
+        if 'weight' in w:
+            if 'affine' in w:
+                if 'torgb' not in w:
+                    if 'mapping' not in w:
+                        keys_a.append(w)
+    for idx in keys_a:
+        weight = weight_dict.get(idx).T
+        weights.append(weight.cpu().detach().numpy())
     weight = np.concatenate(weights, axis=1).astype(np.float32)
     weight = weight / np.linalg.norm(weight, axis=0, keepdims=True)
-    eigen_values, eigen_vectors = np.linalg.eig(weight.dot(weight))
+    eigen_values, eigen_vectors = np.linalg.eig(weight.dot(weight.T))
 
     return layers, eigen_vectors.T, eigen_values
 

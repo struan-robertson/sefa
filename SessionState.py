@@ -15,7 +15,7 @@ https://gist.github.com/tvst/036da038ab3e999a64497f42de966a92
 #     from streamlit.server.server import Server
 
 from streamlit.server.server import Server
-from streamlit.script_run_context import add_script_run_ctx
+from streamlit.scriptrunner.script_run_context import add_script_run_ctx
 class SessionState(object):
     """Hack to add per-session state to Streamlit.
 
@@ -106,7 +106,7 @@ def get(**kwargs):
             (hasattr(s, '_main_dg') and s._main_dg == ctx.main_dg)
             or
             # Streamlit >= 0.54.0
-            (not hasattr(s, '_main_dg') and s.enqueue == s.enqueue)
+            (not hasattr(s, '_main_dg'))
             or
             # Streamlit >= 0.65.2
             (not hasattr(s, '_main_dg') and
