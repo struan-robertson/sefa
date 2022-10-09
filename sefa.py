@@ -91,13 +91,13 @@ def main():
     if gan_type == 'pggan':
         codes = generator.layer0.pixel_norm(codes)
     elif gan_type in ['stylegan', 'stylegan2', 'stylegan3']:
-        codes = generator.mapping(codes, None)#['w']
+        codes = generator.mapping(codes, None, truncation_psi=args.trunc_psi)#['w']
         #print(codes)
         #print(generator)
-        gtrun = TruncationModule(w_space_dim=generator.w_dim,
-                                           num_layers=generator.num_ws,
-                                           repeat_w=True)
-        codes = gtrun(codes, trunc_psi=args.trunc_psi, trunc_layers=args.trunc_layers)
+        #gtrun = TruncationModule(w_space_dim=generator.w_dim,
+        #                                   num_layers=generator.num_ws,
+        #                                   repeat_w=True)
+        #codes = gtrun(codes, trunc_psi=args.trunc_psi, trunc_layers=args.trunc_layers)
         # codes = generator.truncation(codes,
         #                              trunc_psi=args.trunc_psi,
         #                              trunc_layers=args.trunc_layers)

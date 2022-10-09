@@ -167,8 +167,9 @@ def parse_indices(obj, min_val=None, max_val=None):
 
 
 def factorize_weight(generator, size, layer_idx='all', gan_type = 'stylegan2'):
-    print(size)
-    print(gan_type)
+    #print(size)
+    #print(gan_type)
+    print("test")
     """Factorizes the generator weight to get semantics boundaries.
 
     Args:
