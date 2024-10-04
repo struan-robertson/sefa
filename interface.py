@@ -121,7 +121,7 @@ def main():
     elif gan_type == "stylegan":
         max_step = 2.0
     elif gan_type == "stylegan2":
-        max_step = 1.0
+        max_step = 3.0
     for sem_idx in steps:
         eigen_value = eigen_values[sem_idx]
         steps[sem_idx] = st.sidebar.slider(
