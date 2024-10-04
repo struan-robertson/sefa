@@ -141,9 +141,6 @@ def main():
     # except FileNotFoundError:
     base_codes = sample(model, gan_type)
 
-    # input("Press any key once network has finished loading.")
-    breakpoint()
-
     state = SessionState.get(model_name=model_name, code_idx=0, codes=base_codes[0:1])
     if state.model_name != model_name:
         state.model_name = model_name
