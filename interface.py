@@ -111,9 +111,6 @@ def main():
         model = legacy.load_network_pkl(f)["G_ema"].to(device)  # type: ignore
     layers, boundaries, eigen_values = factorize_model(model, args.size, layer_idx)
 
-    # input("Press any key once network has finished loading.")
-    breakpoint()
-
     # print("stage 2")
     num_semantics = st.sidebar.number_input(
         "Number of semantics", value=10, min_value=0, max_value=None, step=1
@@ -143,6 +140,9 @@ def main():
     #     base_codes = np.load(f'latent_codes/{model_name}_latents.npy')
     # except FileNotFoundError:
     base_codes = sample(model, gan_type)
+
+    # input("Press any key once network has finished loading.")
+    breakpoint()
 
     state = SessionState.get(model_name=model_name, code_idx=0, codes=base_codes[0:1])
     if state.model_name != model_name:
