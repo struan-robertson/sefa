@@ -1,5 +1,7 @@
 """SeFa."""
 
+# pyright: basic
+
 import argparse
 import os
 
@@ -10,12 +12,20 @@ from tqdm import tqdm
 import dnnlib
 import legacy
 from models import parse_gan_type
-from utils import HtmlPageVisualizer, factorize_weight, load_generator, postprocess, to_tensor
+from utils import (
+    HtmlPageVisualizer,
+    factorize_weight,
+    load_generator,
+    postprocess,
+    to_tensor,
+)
 
 
 def parse_args():
     """Parses arguments."""
-    parser = argparse.ArgumentParser(description="Discover semantics from the pre-trained weight.")
+    parser = argparse.ArgumentParser(
+        description="Discover semantics from the pre-trained weight."
+    )
     parser.add_argument("model_name", type=str, help="Name to the pre-trained model.")
     parser.add_argument("--model_loc", type=str, help="Name to the pre-trained model.")
     parser.add_argument("--size", type=int, help="size")
@@ -57,7 +67,8 @@ def parse_args():
         "--end_distance",
         type=float,
         default=3.0,
-        help="Ending point for manipulation on each semantic. " "(default: %(default)s)",
+        help="Ending point for manipulation on each semantic. "
+        "(default: %(default)s)",
     )
     parser.add_argument(
         "--step",
@@ -94,7 +105,10 @@ def parse_args():
         "--gpu_id", type=str, default="0", help="GPU(s) to use. (default: %(default)s)"
     )
     parser.add_argument(
-        "--type", type=str, default="stylegan2", help="gan type " "(default: %(default)s)"
+        "--type",
+        type=str,
+        default="stylegan2",
+        help="gan type " "(default: %(default)s)",
     )
     return parser.parse_args()
 
@@ -112,7 +126,9 @@ def main():
         generator = legacy.load_network_pkl(f)["G_ema"].to(device)  # type: ignore
     # generator = load_generator(args.model_name)
     gan_type = args.type
-    layers, boundaries, values = factorize_weight(generator, args.size, args.layer_idx, gan_type)
+    layers, boundaries, values = factorize_weight(
+        generator, args.size, args.layer_idx, gan_type
+    )
 
     # Set random seed.
     np.random.seed(args.seed)
@@ -161,9 +177,13 @@ def main():
             highlight=True,
         )
         for sam_id in range(num_sam):
-            vizer_1.set_cell(sem_id * (num_sam + 1) + sam_id + 1, 0, text=f"Sample {sam_id:03d}")
+            vizer_1.set_cell(
+                sem_id * (num_sam + 1) + sam_id + 1, 0, text=f"Sample {sam_id:03d}"
+            )
     for sam_id in range(num_sam):
-        vizer_2.set_cell(sam_id * (num_sem + 1), 0, text=f"Sample {sam_id:03d}", highlight=True)
+        vizer_2.set_cell(
+            sam_id * (num_sem + 1), 0, text=f"Sample {sam_id:03d}", highlight=True
+        )
         for sem_id in range(num_sem):
             value = values[sem_id]
             vizer_2.set_cell(
@@ -185,10 +205,16 @@ def main():
                     temp_code[:, layers, :] += boundary * d
                     image = generator.synthesis(to_tensor(temp_code))  # ['image']
                 image = postprocess(image)[0]
-                vizer_1.set_cell(sem_id * (num_sam + 1) + sam_id + 1, col_id, image=image)
-                vizer_2.set_cell(sam_id * (num_sem + 1) + sem_id + 1, col_id, image=image)
+                vizer_1.set_cell(
+                    sem_id * (num_sam + 1) + sam_id + 1, col_id, image=image
+                )
+                vizer_2.set_cell(
+                    sam_id * (num_sem + 1) + sem_id + 1, col_id, image=image
+                )
 
-    prefix = f"{args.model_name}_" f"N{num_sam}_K{num_sem}_L{args.layer_idx}_seed{args.seed}"
+    prefix = (
+        f"{args.model_name}_" f"N{num_sam}_K{num_sem}_L{args.layer_idx}_seed{args.seed}"
+    )
     vizer_1.save(os.path.join(args.save_dir, f"{prefix}_sample_first.html"))
     vizer_2.save(os.path.join(args.save_dir, f"{prefix}_semantic_first.html"))
 
