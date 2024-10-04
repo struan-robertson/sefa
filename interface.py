@@ -111,7 +111,8 @@ def main():
         model = legacy.load_network_pkl(f)["G_ema"].to(device)  # type: ignore
     layers, boundaries, eigen_values = factorize_model(model, args.size, layer_idx)
 
-    input("Press any key once network has finished loading.")
+    # input("Press any key once network has finished loading.")
+    breakpoint()
 
     # print("stage 2")
     num_semantics = st.sidebar.number_input(
